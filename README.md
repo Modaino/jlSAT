@@ -8,4 +8,4 @@ This julia code implements a RODE model for the Ising machine with SAT potential
 This julia code implements the continuous time dynamical system (CTDS) model for solving SAT problem.
 ### SDESAT.jl
 This julia code implements an SDE model for the Ising machine with SAT potential, chaotic feedback control and quantum fluctuations.
-$du=f(u,p,t)dt+g(u,p,t)d\xi $
+$$du=f(u,p,t)dt+g(u,p,t)d\xi$$
