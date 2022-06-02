@@ -1,4 +1,5 @@
 # Boolean satisfyability with continuous time dynamical system
+
 ## Quick and easy implementation in julia
 ### SATCFC.jl 
 This julia code implements the continuous time model for the Ising machine with SAT potential and chaotic feedback control
@@ -10,3 +11,6 @@ This julia code implements the continuous time dynamical system (CTDS) model for
 ### SDESAT.jl
 This julia code implements an SDE model for the Ising machine with SAT potential, chaotic feedback control and quantum fluctuations (additive noise model).
 $$du=f(u,p,t)dt+g(u,p,t)d\xi$$
+
+## Banchmark SAT problems in conjungtive normal form
+### SAT_problems directory
