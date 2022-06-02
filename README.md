@@ -4,6 +4,7 @@
 This julia code implements the continuous time model for the Ising machine with SAT potential and chaotic feedback control
 ### noisySAT.jl 
 This julia code implements a RODE model for the Ising machine with SAT potential, chaotic feedback control and quantum fluctuations.
+$$\frac{du}{dt}=f\left(u, p, t, \xi(t) \right)$$ where $\xi(t)$ is a random process.
 ### jlSAT.jl
 This julia code implements the continuous time dynamical system (CTDS) model for solving SAT problem.
 ### SDESAT.jl
