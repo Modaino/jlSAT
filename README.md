@@ -1,6 +1,6 @@
 # Boolean satisfyability with continuous time dynamical system
 
-## Quick and easy implementation in julia
+## Dynamical system implementation (in julia) description
 ### SATCFC.jl 
 This julia code implements the continuous time model for the Ising machine with SAT potential and chaotic feedback control
 ### noisySAT.jl 
@@ -14,3 +14,5 @@ $$du=f(u,p,t)dt+g(u,p,t)d\xi$$
 
 ## Banchmark SAT problems in conjungtive normal form
 ### SAT_problems directory
+
+
