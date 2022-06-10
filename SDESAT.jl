@@ -69,10 +69,10 @@ end
 
 function G_rule!(du, u, c, t)
     # constants
-    r = 0.9
+    r = 1
     η = 1.0
     ζ = 1e-2
-    β = 0.015# 2.5e-9
+    β = 0.15# 2.5e-9
     M, N = size(c)
 
     # variables
@@ -80,17 +80,15 @@ function G_rule!(du, u, c, t)
     σ_sq = u[N+1:2N]
     e = u[2*N+1:3N]
 
-    # γ_ik 
+    
     for i in 1:N
+        # γ_ik 
         du[i,i] = 2*sqrt(η)*(σ_sq[i]-0.5)
         for k in 1:N
-            du[i,k] = e[i] * sum([ prod([l == i || l==k ? 1 : 0.125*c[j,i]*c[j,k]*ζ*(1-ζ*c[j,l]*q[l])/(2*sqrt(η)) for l in 1:N]) for j in 1:M])
-        end
-    end
-    # Γ_ik
-    for i in 1:N
-        for k in 1:N
-            du[2N+i,2N+k] = -β*abs(e[i] * sum([ prod([l == i || l==k ? 1 : 0.125*c[j,i]*c[j,k]*ζ*(1-ζ*c[j,l]*q[l])/(2*sqrt(η)) for l in 1:N]) for j in 1:M]))
+            # γ_ik 
+            du[i,k] = e[i] * sum([ 0.125*c[j,i]*c[j,k]*ζ* prod([l == i || l==k ? 1 : (1-ζ*c[j,l]*q[l]) for l in 1:N])/(2*sqrt(η)) for j in 1:M])
+            # Γ_ik
+            du[i,2N+k] = -β*e[i] * ζ^2 *q[i]/sqrt(η)
         end
     end
 end
@@ -100,7 +98,7 @@ function F_rule!(du, u, c, t)
     r = 0.1
     η = 1.0
     ζ = 1e-2
-    β = 0.015# 2.5e-9
+    β = 0.15# 2.5e-9
     M, N = size(c)
 
     # variables
@@ -116,7 +114,7 @@ function F_rule!(du, u, c, t)
         # updating rule
         du[i] = ((r-1)-(ζ^2)*q[i]^2)*q[i] + f_noiseless[i]
         du[i+N] = 2*r*σ_sq[i] - 2*(σ_sq[i]-1/2) - 4*η*(σ_sq[i]-1/2)^2-2*(ζ^2)*(q[i]^2)*(3/2*σ_sq[i]-1/2)
-        du[i+2N]= -β*(f_noiseless[i]-(r-2)^2)
+        du[i+2N]= -β*e[i]*ζ^2*(q[i]^2 - (r-2)^2 + 1/(4*η))
     end
 end
 
@@ -128,10 +126,6 @@ tspan = (0.0, 500.0)
 u0 = 0.5*ones(3N)
 u0[1:N] = zeros(N) # spin variables
 
-# terminate integration on solution
-condition(u, t, integrator) = satisfied([s>0 ? 1 : -1 for s in u], c)
-affect!(integrator) = terminate!(integrator)
-cb = DiscreteCallback(condition, affect!)
 # define problem and run simulation
 prob = SDEProblem(F_rule!, G_rule!, u0, tspan, c, noise_rate_prototype=zeros(3N, 3N))
 sol = solve(prob,LambaEulerHeun())
