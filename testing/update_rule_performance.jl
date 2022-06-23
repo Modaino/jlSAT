@@ -1,5 +1,7 @@
+using DifferentialEquations
+using StaticArrays
 using BenchmarkTools
-using Plots
+using Test
 
 function lastLine(file)
     ea = eachline(file)
@@ -34,6 +36,16 @@ function load_cnf(file_name)
         end
     end
     return c
+end
+
+function process_clauses(C)
+    clauses = Vector{Any}(undef, N)
+    for (i,Ci) ∈ enumerate(eachcol(C))
+        m_inds = findall(Ci .≠ 0)
+        j_inds = [filter!(j->j≠i, findall(C[m,:].≠0)) for m ∈ m_inds]
+        clauses[i] = [(C[m,i], SVector((collect∘zip)(js,C[m,j] for j ∈ js)...)) for (js,m) ∈ zip(j_inds,m_inds)]
+    end
+    return SVector(clauses...)
 end
 
 function F_rule!(du, u, p, t)
@@ -94,9 +106,51 @@ function F_rule2!(du, u, c, t)
     end
 end
 
-# c = load_cnf("SAT_problems\\random3SATn60a4.267.cnf")
+function F_rule3!(du, u, params, t)
+    clauses, β, η, ς, p = params
+    q, σ², e = u.x
+    dq, dσ², de = du.x
+    for i ∈ eachindex(q)
+        # The following line is nice but type-unstable for some reason
+        # ςfi = e[i] * sum(Cni/8 * prod(1-ς*Cnj*q[j] for (j,Cnj) ∈ Cn) for (Cni,Cn) ∈ clauses[i])
+        ςfi = 0
+        for (Cmi,Cm) ∈ clauses[i]
+            fim = (1/8) * Cmi
+            for (j,Cmj) ∈ Cm
+                fim *= 1-ς*Cmj*q[j]
+            end
+            ςfi += fim
+        end
+        ςfi *= e[i]
+        dq[i] = (p-1) * q[i] - ς^2 * q[i]^3 + ςfi / ς
+        dσ²[i] = 2p * σ²[i] - 2 * (σ²[i]-0.5) - 4η * (σ²[i]-0.5)^2 - (ς*q[i])^2 * (3σ²[i]-1)
+        de[i] = -β * e[i] * (ςfi^2 - (p-2)^2)
+    end
+end
 
-# M, N = size(c)
-# ζ = 0.01
+C = load_cnf(joinpath("SAT_problems","random3SATn50a3.42.cnf"))
+M, N = size(C)
+u = randn(3N)
 
-# @benchmark F_rule1!(zeros(3N), rand(3N), c, 16.1)
+# Base version
+du = zero(u)
+@btime F_rule!(du, u, (C,0.01), 0.) # display(@benchmark F_rule!(du, u, (C,0.01), 0.))
+
+# Version 1
+du1 = zero(u)
+@btime F_rule1!(du1, u, C, 0.)
+@test all(du1 .≈ du)
+
+# Version 2
+du2 = zero(u)
+@btime F_rule2!(du2, u, C, 0.)
+@test all(du2 .≈ du)
+
+# Version 3
+clauses = process_clauses(C)
+params = (clauses, 0.3, 1.0, 0.01, 0.9)
+u3 = ArrayPartition(u[1:N], u[N+1:2N], u[2N+1:3N])
+
+du3 = zero(u3)
+@btime F_rule3!(du3, u3, params, 0.)
+@test all(du3 .≈ du);
