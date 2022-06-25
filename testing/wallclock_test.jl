@@ -1,7 +1,8 @@
 using DifferentialEquations
-using DynamicalSystems
-using Plots
+# using DynamicalSystems
+# using Plots
 using StaticArrays
+using BenchmarkTools
 
 function test1()
 
@@ -101,6 +102,7 @@ function test1()
     # define problem and run simulation
     prob = ODEProblem(F_rule3!, u3, tspan, params)
     @time sol = solve(prob, Tsit5())
+    @btime sol = solve($prob, Tsit5())
     println("Test simulation finished")
 end
 
@@ -200,6 +202,7 @@ function test2()
     # define problem and run simulation
     prob = ODEProblem(F_rule!, u3, tspan, params)
     @time sol = solve(prob, Tsit5())
+    @btime sol = solve($prob, Tsit5())
     println("Test simulation finished")
 end
 
