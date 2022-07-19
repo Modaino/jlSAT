@@ -1,6 +1,7 @@
 using DifferentialEquations
 using DynamicalSystems
 using Plots
+#using Random
 
 function is_satisfied(spin_config, c)
     function check_clause(row, state)
@@ -100,12 +101,12 @@ function G_rule!(du, u, p, t)
 
     # variables
     q = u[1:N]
-    σ_sq = u[N+1:2N]
+    σ² = u[N+1:2N]
     e = u[2*N+1:3N]
     
     for i in 1:N
         # γ_ik 
-        du[i,i] = 2*sqrt(η)*(σ_sq[i]-0.5)
+        du[i,i] = 2*sqrt(η)*(σ²[i]-0.5)
         for k in 1:N
             # γ_ik 
             du[i,k] = k==i ? 0 : (1/ζ)*e[i] * sum(0.125*c[i,m]*prod(l == i || l==k ? 1 : (1-ζ*c[l,m]*q[l]) for l in 1:N)/(2*sqrt(η)) for j in 1:M)
@@ -126,13 +127,13 @@ function F_rule!(du, u, p, t)
     α = (r-2)
 
     q = u[1:N]
-    σ_sq = u[N+1:2N]
+    σ² = u[N+1:2N]
     e = u[2*N+1:3N]
     f = zeros(N)
     for i in 1:N
         f[i] = (1/ζ)* e[i]*sum(c[j,i]*(0.125*prod( k!=i ? (1-ζ*c[j, k]*q[k]) : 1 for k in 1:N)) for j in 1:M)
         du[i] = (r-1)*q[i]-ζ²*q[i]^3+f[i]
-        du[i+N] = 2*r*σ_sq[i] - 2*(σ_sq[i]-1/2) - 4*η*(σ_sq[i]-1/2)^2-2*(q[i]^2)*ζ²*(3/2*σ_sq[i]-1/2)
+        du[i+N] = 2*r*σ²[i] - 2*(σ²[i]-1/2) - 4*η*(σ²[i]-1/2)^2-2*(q[i]^2)*ζ²*(3/2*σ²[i]-1/2)*2 #    <------ modifed *2
         du[i+2N] = -β*e[i]*(ζ²*q[i]^2-α²)
     end
 end
