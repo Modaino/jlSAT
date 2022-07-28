@@ -101,18 +101,18 @@ function G_rule!(du, u, p, t)
 
     # variables
     q = u[1:N]
-    σ_sq = u[N+1:2N]
+    σ² = u[N+1:2N]
     e = u[2*N+1:3N]
     
     for i in 1:N
         # γ_ik 
-        du[i,i] = 2*sqrt(η)*(σ_sq[i]-0.5)
+        du[i,i] = 2*sqrt(η)*(σ²[i]-0.5)
         for k in 1:N
             # γ_ik 
-            du[i,k] = e[i] * sum(0.125*c[j,i]*c[j,k]*ζ* prod(l == i || l==k ? 1 : (1-ζ*c[j,l]*q[l]) for l in 1:N)/(2*sqrt(η)) for j in 1:M)
-            # Γ_ik
-            du[i,2N+k] = -β*e[i] * ζ^2 *q[i]/sqrt(η)
+            du[i,k] = k==i ? 0 : (1/ζ)*e[i] * sum(0.125*c[i,m]*prod(l == i || l==k ? 1 : (1-ζ*c[l,m]*q[l]) for l in 1:N)/(2*sqrt(η)) for j in 1:M)
         end
+        # Γ_ik
+        du[i,2N+i] = -β*e[i]*ζ²*q[i]/sqrt(η)
     end
 end
 
@@ -124,23 +124,24 @@ function F_rule!(du, u, p, t)
     r = 0.9
     c = p[1]
     M, N = size(c)
+    α = (r-2)
 
     q = u[1:N]
-    σ_sq = u[N+1:2N]
+    σ² = u[N+1:2N]
     e = u[2*N+1:3N]
     f = zeros(N)
     for i in 1:N
         f[i] = (1/ζ)* e[i]*sum(c[j,i]*(0.125*prod( k!=i ? (1-ζ*c[j, k]*q[k]) : 1 for k in 1:N)) for j in 1:M)
-        du[i] = (r-1)*q[i]-(ζ^2)*q[i]^3+f[i]
-        du[i+N] = 2*r*σ_sq[i] - 2*(σ_sq[i]-1/2) - 4*η*(σ_sq[i]-1/2)^2-2*(q[i]^2)*(ζ^2)*(3/2*σ_sq[i]-1/2)
-        du[i+2N] = -β*e[i]*((ζ^2)*f[i]^2-(r-2)^2)
+        du[i] = (r-1)*q[i]-ζ²*q[i]^3+f[i]
+        du[i+N] = 2*r*σ²[i] - 2*(σ²[i]-1/2) - 4*η*(σ²[i]-1/2)^2-2*(q[i]^2)*ζ²*(3/2*σ²[i]-1/2)*2 #    <------ modifed *2
+        du[i+2N] = -β*e[i]*(ζ²*q[i]^2-α²)
     end
 end
 
 
 c = load_cnf("SAT_problems\\random3SATn15a4.266666666666667.cnf")
 M, N = size(c)
-ζ = 1e-2
+ζ = 1.5*1e-1
 
 # initial & boundary conditions
 tspan = (0.0, 50.0)
@@ -157,7 +158,10 @@ cb = DiscreteCallback(condition, affect!)
 prob = SDEProblem(F_rule!, G_rule!, u0, tspan, (c, ζ), noise_rate_prototype=zeros(3N, 3N))
 sol = solve(prob,LambaEulerHeun(), callback = cb)
 
+
 # Plotting and results
+l = @layout [a{0.01h}; grid(2,2)]
+p0 = plot(title="Search dynamics with ζ=1.5*10⁻¹",framestyle=nothing,showaxis=false,xticks=false,yticks=false)
 p1 = plot(sol, xaxis="analog time", yaxis="q", vars=(1:N))
 p2 = plot(sol, xaxis="analog time", yaxis="σ^2", vars=(N+1:2*N))
 to_be_plotted = zeros(length(sol.t))
@@ -166,4 +170,4 @@ for idx in 1:length(sol.t)
 end
 p3 = plot(sol.t, to_be_plotted, xaxis="analog time", yaxis="Ratio of satisfied clauses")
 p4 = plot(sol, xaxis="analog time", yaxis="errors", vars=(2*N+1:3*N))
-plot(p1, p2, p3, p4, layout= (2, 2), legend = false)
+plot(p0, p1, p2, p3, p4, layout=l, legend = false, )
