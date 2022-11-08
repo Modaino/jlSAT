@@ -18,3 +18,15 @@ function circulate!(opo::OPO, β::Real, Γ::State, rng::AbstractRNG=Random.GLOBA
     squeeze_project!(Γ, 2, λ_in); update!(opo.ℬ_out, Γ)
     return homodyne_q!(Γ, 2, rng)
 end
+
+# Simplified for no crystal, no losses
+function circulate!(opo::OPO{NoGainModel}, Γ::State, rng::AbstractRNG=Random.GLOBAL_RNG; λ_in::Real=1, de_kwargs...)
+    squeeze_project!(Γ, 2, λ_in); update!(opo.ℬ_out, Γ)
+    return homodyne_q!(Γ, 2, rng)
+end
+
+# More simplified for no squeezing at measurement
+function circulate!(opo::OPO{NoGainModel}, Γ::State, rng::AbstractRNG=Random.GLOBAL_RNG; de_kwargs...)
+    vacuum_project!(Γ, 2); update!(opo.ℬ_out, Γ)
+    return homodyne_q!(Γ, 2, rng)
+end
